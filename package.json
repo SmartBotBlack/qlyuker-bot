@@ -1,0 +1,30 @@
+{
+	"name": "qlyuker-bot",
+	"version": "1.0.0",
+	"description": "",
+	"main": "src/index.ts",
+	"scripts": {
+		"start": "tsx ./src/index.ts",
+		"dev": "tsx --watch ./src/index.ts",
+		"lint": "npx @biomejs/biome format --write ./src"
+	},
+	"keywords": ["qlyuker", "qlyuker bot", "bot"],
+	"author": "SmartBot Team",
+	"dependencies": {
+		"@inquirer/prompts": "^6.0.1",
+		"axios": "^1.7.7",
+		"better-sqlite3": "^11.3.0",
+		"colors": "^1.4.0",
+		"dotenv": "^16.4.5",
+		"https-proxy-agent": "^7.0.5",
+		"telegram": "^2.25.11",
+		"tsx": "^4.19.1",
+		"zod": "^3.23.8"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.3",
+		"@types/better-sqlite3": "^7.6.11",
+		"@types/node": "^22.7.4",
+		"typescript": "^5.6.2"
+	}
+}
