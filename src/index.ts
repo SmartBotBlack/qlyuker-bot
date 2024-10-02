@@ -17,14 +17,16 @@ const ensureTableExists = () => {
 		.get();
 
 	if (!tableExists) {
-		db.prepare(`
+		db.prepare(
+			`
             CREATE TABLE accounts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 phoneNumber TEXT,
                 session TEXT,
                 proxy TEXT
             );
-        `).run();
+        `,
+		).run();
 	}
 };
 
@@ -98,7 +100,9 @@ const generateIOSUserAgent = (): string => {
 	const iPhoneModel = getRandomElement(iPhoneModels);
 	const safariVersion = getRandomElement(safariVersions);
 
-	return `Mozilla/5.0 (${iPhoneModel}; CPU iPhone OS ${iOSVersion} like Mac OS X) AppleWebKit/${safariVersion} (KHTML, like Gecko) Version/${iOSVersion.split("_")[0]}.0 Mobile/15E148 Safari/${safariVersion}`;
+	return `Mozilla/5.0 (${iPhoneModel}; CPU iPhone OS ${iOSVersion} like Mac OS X) AppleWebKit/${safariVersion} (KHTML, like Gecko) Version/${
+		iOSVersion.split("_")[0]
+	}.0 Mobile/15E148 Safari/${safariVersion}`;
 };
 
 const createSession = async (phoneNumber: string, proxy: string) => {
@@ -152,11 +156,19 @@ const createSession = async (phoneNumber: string, proxy: string) => {
 	}
 };
 
-const showAllAccounts = () => {
-	const stmt = db.prepare("SELECT phoneNumber, proxy FROM accounts");
+const showAllAccounts = async () => {
+	const stmt = db.prepare("SELECT id, phoneNumber, proxy FROM accounts");
+	const arr = [];
 	for (const row of stmt.iterate()) {
+		arr.push(row);
 		console.log(row);
 	}
+	return arr;
+};
+
+const deleteAccount = async (id: number) => {
+	const stmt = db.prepare(`DELETE FROM accounts WHERE id=(@id)`).run({ id });
+	console.log(`Account ${id} is delete`);
 };
 
 const getQueryId = async (phoneNumber: string, session: string) => {
@@ -233,7 +245,11 @@ const getCookie = async ({
 	queryId,
 	userAgent,
 	proxy,
-}: { queryId: string; userAgent: string; proxy: string }) => {
+}: {
+	queryId: string;
+	userAgent: string;
+	proxy: string;
+}) => {
 	const url = "https://qlyuker.io/api/auth/start";
 	const headers = { ..._headers, "User-Agent": userAgent };
 
@@ -411,6 +427,11 @@ const start = async () => {
 					value: "show",
 					description: "show all added accounts",
 				},
+				{
+					name: "Delete account",
+					value: "delete",
+					description: "delete account",
+				},
 			],
 		});
 
@@ -434,6 +455,22 @@ const start = async () => {
 			}
 			case "start": {
 				await start();
+				break;
+			}
+			case "delete": {
+				const allAccounts = await showAllAccounts();
+				const choicesArr = allAccounts.map((el) => {
+					//@ts-ignore
+					const { id } = el;
+					return { name: `id: ${id}`, value: id };
+				});
+
+				const accountId = await select({
+					message: "Select an account to delete:",
+					choices: choicesArr,
+				});
+
+				await deleteAccount(accountId);
 				break;
 			}
 			default:
