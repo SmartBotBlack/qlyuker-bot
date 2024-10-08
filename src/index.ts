@@ -407,6 +407,11 @@ const start = async () => {
 
 (async () => {
 	ensureTableExists();
+	const args = process.argv.slice(2);
+	if (args.includes('--start')) {
+		// Если запущено с аргументом --start, сразу запускаем farming
+		await start();
+	}
 
 	while (true) {
 		const mode = await select({
