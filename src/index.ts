@@ -1,11 +1,11 @@
 import axios from "axios";
 import "colors";
 import { input, select } from "@inquirer/prompts";
-import { TelegramClient, Api } from "telegram";
-import { StringSession } from "telegram/sessions";
 import Database from "better-sqlite3";
-import env from "./env";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import { Api, TelegramClient } from "telegram";
+import { StringSession } from "telegram/sessions";
+import env from "./env";
 
 const db = new Database("accounts.db");
 
@@ -32,78 +32,33 @@ const ensureTableExists = () => {
 
 const _headers = {
 	accept: "*/*",
-	"accept-language": "en-US,en;q=0.9,ru-RU;q=0.8,ru;q=0.7",
-	"cache-control": "no-cache",
+	"accept-encoding": "gzip, deflate, br, zstd",
+	"accept-language": "ru,ru-RU;q=0.9,en-US;q=0.8,en;q=0.7",
+	connection: "keep-alive",
 	"content-type": "application/json",
+	host: "qlyuker.io",
+	klyuk: "0110101101101100011011110110111101101011",
 	locale: "ru",
 	onboarding: "0",
-	pragma: "no-cache",
+	origin: "https://qlyuker.io",
+	referer: "https://qlyuker.io/",
+	"sec-ch-ua-mobile": "?1",
+	"sec-ch-ua-platform": '"Android"',
 	"sec-fetch-dest": "empty",
 	"sec-fetch-mode": "cors",
 	"sec-fetch-site": "same-origin",
-	tgplatform: "ios",
-	Referer: "https://qlyuker.io/",
-	"Referrer-Policy": "strict-origin-when-cross-origin",
+	tgplatform: "android",
+	"x-requested-with": "org.telegram.messenger",
 };
 
-const generateIOSUserAgent = (): string => {
-	const iOSVersions = [
-		"14_0",
-		"14_1",
-		"14_2",
-		"14_3",
-		"14_4",
-		"14_5",
-		"14_6",
-		"14_7",
-		"14_8",
-		"15_0",
-		"15_1",
-		"15_2",
-		"15_3",
-		"15_4",
-		"15_5",
-		"15_6",
-		"16_0",
-		"16_1",
-		"16_2",
-		"16_3",
-		"16_4",
-		"17_0",
-	];
-	const iPhoneModels = [
-		"iPhone12,1",
-		"iPhone12,3",
-		"iPhone12,5",
-		"iPhone13,1",
-		"iPhone13,2",
-		"iPhone13,3",
-		"iPhone13,4",
-		"iPhone14,2",
-		"iPhone14,3",
-		"iPhone14,4",
-		"iPhone14,5",
-	];
-	const safariVersions = [
-		"602.1",
-		"603.1",
-		"604.1",
-		"605.1.15",
-		"605.2.15",
-		"605.3.8",
-	];
-
-	const getRandomElement = <T>(array: T[]): T =>
-		array[Math.floor(Math.random() * array.length)];
-
-	const iOSVersion = getRandomElement(iOSVersions);
-	const iPhoneModel = getRandomElement(iPhoneModels);
-	const safariVersion = getRandomElement(safariVersions);
-
-	return `Mozilla/5.0 (${iPhoneModel}; CPU iPhone OS ${iOSVersion} like Mac OS X) AppleWebKit/${safariVersion} (KHTML, like Gecko) Version/${
-		iOSVersion.split("_")[0]
-	}.0 Mobile/15E148 Safari/${safariVersion}`;
-};
+function generateAndroidUserAgentAndSecChUa() {
+	const chromeVersions = [106, 107, 108, 109, 110];
+	const majorChromeVersion =
+		chromeVersions[Math.floor(Math.random() * chromeVersions.length)];
+	const userAgent = `Mozilla/5.0 (Linux; Android 11; Pixel 5 Build/RQ3A.210905.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${majorChromeVersion}.0.0.0 Mobile Safari/537.36`;
+	const secChUa = `"Android WebView";v="${majorChromeVersion}", "Not=A?Brand";v="8", "Chromium";v="${majorChromeVersion}"`;
+	return { userAgent, secChUa };
+}
 
 const createSession = async (phoneNumber: string, proxy: string) => {
 	try {
@@ -167,7 +122,7 @@ const showAllAccounts = async () => {
 };
 
 const deleteAccount = async (id: number) => {
-	const stmt = db.prepare(`DELETE FROM accounts WHERE id=(@id)`).run({ id });
+	const stmt = db.prepare("DELETE FROM accounts WHERE id=(@id)").run({ id });
 	console.log(`Account ${id} is delete`);
 };
 
@@ -244,14 +199,20 @@ const extractUserData = (queryId: string) => {
 const getCookie = async ({
 	queryId,
 	userAgent,
+	secChUa,
 	proxy,
 }: {
 	queryId: string;
 	userAgent: string;
+	secChUa: string;
 	proxy: string;
 }) => {
 	const url = "https://qlyuker.io/api/auth/start";
-	const headers = { ..._headers, "User-Agent": userAgent };
+	const headers = {
+		..._headers,
+		"User-Agent": userAgent,
+		"sec-ch-ua": secChUa,
+	};
 
 	const payload = {
 		startData: queryId,
@@ -282,11 +243,13 @@ const getCookie = async ({
 const sync = async ({
 	cookies,
 	userAgent,
+	secChUa,
 	proxy,
 	payload,
 }: {
 	cookies: string;
 	userAgent: string;
+	secChUa: string;
 	proxy: string;
 	payload: {
 		clientTime: number;
@@ -295,7 +258,12 @@ const sync = async ({
 	};
 }) => {
 	const url = "https://qlyuker.io/api/game/sync";
-	const headers = { ..._headers, cookie: cookies, "User-Agent": userAgent };
+	const headers = {
+		..._headers,
+		cookie: cookies,
+		"User-Agent": userAgent,
+		"sec-ch-ua": secChUa,
+	};
 
 	const res = await axios.post(
 		url,
@@ -313,7 +281,7 @@ const farm = async (account: {
 }) => {
 	const { phoneNumber, session, proxy } = account;
 	const queryId = await getQueryId(phoneNumber, session);
-	const userAgent = generateIOSUserAgent();
+	const { userAgent, secChUa } = generateAndroidUserAgentAndSecChUa();
 
 	if (!queryId) {
 		console.log(`Failed to get query data for ${phoneNumber}`.red);
@@ -328,7 +296,7 @@ const farm = async (account: {
 			const {
 				cookies,
 				user: { coinsPerTap, currentEnergy, maxEnergy, energyPerSec },
-			} = await getCookie({ queryId, userAgent, proxy });
+			} = await getCookie({ queryId, userAgent, secChUa, proxy });
 			let energy = currentEnergy;
 
 			const timeForFullenergy = (maxEnergy - energy) / energyPerSec;
@@ -359,6 +327,7 @@ const farm = async (account: {
 				const { currentEnergy, currentCoins } = await sync({
 					cookies,
 					userAgent,
+					secChUa,
 					proxy,
 					payload: {
 						clientTime: Math.floor(Date.now() / 1e3),
