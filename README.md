@@ -15,7 +15,7 @@ The script does:
 
 ## Installation
 
-To get started with the Okx Racer Telegram Game Bot, follow these steps:
+To get started with the Qlyuker Telegram Game Bot, follow these steps:
 
 1. Install [NodeJS](https://nodejs.org/en)
 2. `git clone https://github.com/SmartBotBlack/qlyuker-bot`
@@ -32,6 +32,13 @@ After installing the scripts, follow these steps to start using the bot:
 
 1. Run `npx tsx ./src/index.ts`
 2. Follow the instructions on the screen. First, add an account.
+
+## Launching with docker 
+After installing the scripts, follow these steps to start using the bot:
+1. Run `npx tsx ./src/index.ts`
+2. Follow the instructions on the screen. First, add an account.
+3. Run `docker build -t qlyuker-bot .`
+4. And run `docker run -d --restart unless-stopped qlyuker-bot`
 
 ## Contributing
 
